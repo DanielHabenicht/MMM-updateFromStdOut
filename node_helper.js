@@ -2,6 +2,7 @@
 Provided under the MIT License.
 
 Copyright (c) 2017 Matthias Steinkogler
+Copyright (c) 2021 Daniel Habenicht
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +28,7 @@ SOFTWARE.
 const NodeHelper = require("node_helper");
 const spawn = require("child_process").spawn;
 const readline = require("readline");
+const logPrefix = "[MMM-updateFromStdOut]";
 
 var _breakOffFirstLine = /\r?\n/;
 function filterStdoutDataDumpsToTextLines(callback) {
@@ -65,11 +67,11 @@ module.exports = NodeHelper.create({
       console.debug("Spawned Process");
 
       rtl_433.stdout.on("data", (data) => {
-        console.log(data.toString());
+        console.log(logPrefix + data.toString());
       });
 
       rtl_433.stderr.on("data", (data) => {
-        console.log("err" + data.toString());
+        console.log(logPrefix + "Error: " + data.toString());
       });
 
       rtl_433.stdout.on(
@@ -93,7 +95,7 @@ module.exports = NodeHelper.create({
           }, 6 * 60 * 60 * 1000); // 6 hours
 
           var dataObject = JSON.parse(line.toString());
-          console.log(dataObject);
+          console.log(logPrefix + dataObject);
           this.temperature = dataObject["temperature_C"] || this.temperature;
           this.humidity = dataObject["humidity"] || this.humidity;
 
@@ -105,17 +107,17 @@ module.exports = NodeHelper.create({
       );
 
       rtl_433.stdout.on("end", function () {
-        console.log("Process ended");
+        console.log(logPrefix + "Process ended");
       });
       rtl_433.stdout.on("close", function () {
-        console.log("Process ended");
+        console.log(logPrefix + "Process ended");
       });
 
       rtl_433.on("exit", (code) => {
-        console.log("Process ended");
+        console.log(logPrefix + "Process ended");
       });
     } catch (err) {
-      console.log(err);
+      console.log(logPrefix + err);
     }
   },
 
