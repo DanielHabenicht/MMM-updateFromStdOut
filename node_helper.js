@@ -22,37 +22,69 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-'use strict';
+"use strict";
 
-const NodeHelper = require('node_helper');
-const spawn = require('child_process').spawn;
+const NodeHelper = require("node_helper");
+const spawn = require("child_process").spawn;
+const readline = require("readline");
+
+var _breakOffFirstLine = /\r?\n/;
+function filterStdoutDataDumpsToTextLines(callback) {
+  var acc = "";
+  return function (data) {
+    var splitted = data.toString().split(_breakOffFirstLine);
+    var inTactLines = splitted.slice(0, splitted.length - 1);
+
+    inTactLines[0] = acc + inTactLines[0]; //if there was a partial, unended line in the previous dump, it is completed by the first section.
+
+    acc = splitted[splitted.length - 1]; //if there is a partial, unended line in this dump, store it to be completed by the next (we assume there will be a terminating newline at some point. This is, generally, a safe assumption.)
+    for (var i = 0; i < inTactLines.length; ++i) {
+      callback(inTactLines[i]);
+    }
+  };
+}
 
 module.exports = NodeHelper.create({
   start: function () {
-    console.log('MMM-updateFromStdOut helper started...');
-  },
-
-  socketNotificationReceived: function (notification, payload) {
-    // we receive this notification upon startup of the module, then we can respond.
-    if (notification === 'REQUEST-MMM-updateFromStdOut') {
-      var self = this;
+    var self = this;
+    try {
+      console.log("MMM-updateFromStdOut helper started...");
 
       var timeoutId = null;
 
-      var rtl_433 = spawn('/usr/local/bin/rtl_433', ['-R', '25'], {
-        detached: true
+      var rtl_433 = spawn(
+        "/usr/local/bin/rtl_433",
+        // ["-R", "12", "-F", "json"],
+        ["-F", "json"],
+        {
+          detached: true,
+          shell: true
+        }
+      );
+
+      console.debug("Spawned Process");
+
+      rtl_433.stdout.on("data", (data) => {
+        console.log(data.toString());
       });
 
-      rtl_433.stdout.on('data', function (data) {
-        try {
+      rtl_433.stderr.on("data", (data) => {
+        console.log("err" + data.toString());
+      });
+
+      rtl_433.stdout.on(
+        "data",
+        filterStdoutDataDumpsToTextLines((line) => {
+          //each time this inner function is called, you will be getting a single, complete line of the stdout ^^
+
           if (timeoutId !== null) {
             clearTimeout(timeoutId);
           }
 
           // If we haven't received information from the sensor for the timeout,
           // the battery is probably empty.
-          timeoutId = setTimeout(function() {
-            self.sendSocketNotification('DATA-MMM-updateFromStdOut', {
+          timeoutId = setTimeout(function () {
+            self.sendSocketNotification("DATA-MMM-updateFromStdOut", {
               temp: "--",
               humidity: "--",
               battery: "empty"
@@ -60,22 +92,34 @@ module.exports = NodeHelper.create({
             return;
           }, 6 * 60 * 60 * 1000); // 6 hours
 
-          var strData = data.toString();
-          if (strData.includes("Temperature: ") && strData.includes("Humidity  : ") && strData.includes("Battery   : ")) {
-            var temp = strData.split("Temperature: ")[1].split(" C")[0];
-            var humidity = strData.split("Humidity  : ")[1].split(" %")[0];
-            var battery = strData.split("Battery   : ")[1].split(" ")[0];
+          var dataObject = JSON.parse(line.toString());
+          console.log(dataObject);
+          this.temperature = dataObject["temperature_C"] || this.temperature;
+          this.humidity = dataObject["humidity"] || this.humidity;
 
-            self.sendSocketNotification('DATA-MMM-updateFromStdOut', {
-              temp: temp,
-              humidity: humidity,
-              battery: battery
-            });
-          }
-        } catch (err) {
-          console.log(err);
-        }
+          self.sendSocketNotification("DATA-MMM-updateFromStdOut", {
+            temp: this.temperature,
+            humidity: this.humidity
+          });
+        })
+      );
+
+      rtl_433.stdout.on("end", function () {
+        console.log("Process ended");
       });
+      rtl_433.stdout.on("close", function () {
+        console.log("Process ended");
+      });
+
+      rtl_433.on("exit", (code) => {
+        console.log("Process ended");
+      });
+    } catch (err) {
+      console.log(err);
     }
+  },
+
+  socketNotificationReceived: function (notification, payload) {
+    // we receive this notification upon startup of the module, then we can respond.
   }
 });
