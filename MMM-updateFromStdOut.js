@@ -2,7 +2,6 @@
 Provided under the MIT License.
 
 Copyright (c) 2017 Matthias Steinkogler
-Copyright (c) 2021 Daniel Habenicht
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,55 +23,56 @@ SOFTWARE.
 */
 
 Module.register("MMM-updateFromStdOut", {
-  // Default module config.
-  defaults: {},
-
-  start: function () {
-    Log.info("Starting module: " + this.name);
-
-    this.loaded = false;
-    this.temperature = "";
-    this.humidity = "";
-    this.battery = "";
-
-    // initialize socket communication with node_helper so it can send us information.
-    this.sendSocketNotification("REQUEST-MMM-updateFromStdOut", this.config);
-  },
-
-  getDom: function () {
-    var wrapper = document.createElement("div");
-    wrapper.className = "bright large light";
-
-    if (!this.loaded) {
-      wrapper.innerHTML = "Loading...";
-      wrapper.className = "dimmed light small";
+    // Default module config.
+    defaults: {},
+  
+    start: function () {
+      Log.info("Starting module: " + this.name);
+  
+      this.loaded = false;
+      this.temperature = "";
+      this.humidity = "";
+      this.battery = "";
+  
+      // initialize socket communication with node_helper so it can send us information.
+      this.sendSocketNotification("REQUEST-MMM-updateFromStdOut", this.config);
+    },
+  
+    getDom: function () {
+      var wrapper = document.createElement("div");
+      wrapper.className = "bright large light mmm-updatefromstdout";
+  
+      if (!this.loaded) {
+        wrapper.innerHTML = "Loading...";
+        wrapper.className = "dimmed light small";
+        return wrapper;
+      }
+  
+      var div = document.createElement("div");
+  
+      if (this.battery === "empty") {
+        div.innerHTML +=
+          "<i aria-hidden='true' class='fa fa-battery-empty' style='color: red'></i>";
+        wrapper.appendChild(div);
+      } else {
+        div.innerHTML +=
+          "<span class='bold'>" + this.temperature + "</span>&deg;C&nbsp;";
+        div.innerHTML += "<span class='bold'>" + this.humidity + "</span>%";
+        wrapper.appendChild(div);
+      }
+  
       return wrapper;
+    },
+  
+    socketNotificationReceived: function (notification, payload) {
+      if (notification === "DATA-MMM-updateFromStdOut") {
+        this.temperature = payload.temp;
+        this.humidity = payload.humidity;
+        this.battery = payload.battery;
+        this.loaded = 1;
+  
+        this.updateDom();
+      }
     }
-
-    var div = document.createElement("div");
-
-    if (this.battery === "empty") {
-      div.innerHTML +=
-        "<i aria-hidden='true' class='fa fa-battery-empty' style='color: red'></i>";
-      wrapper.appendChild(div);
-    } else {
-      div.innerHTML +=
-        "<span class='bold'>" + this.temperature + "</span>&deg;C&nbsp;";
-      div.innerHTML += "<span class='bold'>" + this.humidity + "</span>%";
-      wrapper.appendChild(div);
-    }
-
-    return wrapper;
-  },
-
-  socketNotificationReceived: function (notification, payload) {
-    if (notification === "DATA-MMM-updateFromStdOut") {
-      this.temperature = payload.temp;
-      this.humidity = payload.humidity;
-      this.battery = payload.battery;
-      this.loaded = 1;
-
-      this.updateDom();
-    }
-  }
-});
+  });
+  
