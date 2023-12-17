@@ -1,0 +1,21 @@
+{
+  "name": "mmm-updatefromstdout",
+  "version": "1.0.0",
+  "description": "A [Magic Mirror](https://magicmirror.builders/) [module](https://github.com/MichMich/MagicMirror/wiki/MagicMirror%C2%B2-Modules) to receive input via stdout from a program running in the background and then update the mirror with this information. Initially used for displaying temperature readings from a USB DVB-T stick acting as a 433Mhz SDR, receiving input from a cheap wireless weather sensor (GT-WT-01).",
+  "main": "MMM-updateFromStdOut.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DanielHabenicht/MMM-updateFromStdOut.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/DanielHabenicht/MMM-updateFromStdOut/issues"
+  },
+  "homepage": "https://github.com/DanielHabenicht/MMM-updateFromStdOut#readme",
+  "dependencies": {
+    "jsonata": "^2.0.3"
+  }
+}

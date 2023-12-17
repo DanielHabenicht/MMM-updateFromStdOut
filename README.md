@@ -42,4 +42,16 @@ but works perfectly), customize node_helper.js to use these command line paramet
 
 Remarks:
 
-- rtl_433 seem not to work on fresh reboot 3https://github.com/merbanan/rtl_433/issues/1669
+- rtl_433 seem not to work on fresh reboot https://github.com/merbanan/rtl_433/issues/1669
+
+# Use Cases
+
+RTL_433
+
+
+
+# Confguration
+
+```
+
+```

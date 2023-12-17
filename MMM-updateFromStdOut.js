@@ -31,17 +31,18 @@ Module.register("MMM-updateFromStdOut", {
     Log.info("Starting module: " + this.name);
 
     this.loaded = false;
-    this.temperature = "";
-    this.humidity = "";
+	this.values = {}
     this.battery = "";
 
     // initialize socket communication with node_helper so it can send us information.
-    this.sendSocketNotification("REQUEST-MMM-updateFromStdOut", this.config);
+    this.sendSocketNotification("REQUEST-MMM-updateFromStdOut", {
+		config: this.config
+	});
   },
 
   getDom: function () {
     var wrapper = document.createElement("div");
-    wrapper.className = "bright large light";
+      wrapper.className = "bright large light mmm-updatefromstdout";
 
     if (!this.loaded) {
       wrapper.innerHTML = "Loading...";
@@ -56,9 +57,13 @@ Module.register("MMM-updateFromStdOut", {
         "<i aria-hidden='true' class='fa fa-battery-empty' style='color: red'></i>";
       wrapper.appendChild(div);
     } else {
-      div.innerHTML +=
-        "<span class='bold'>" + this.temperature + "</span>&deg;C&nbsp;";
-      div.innerHTML += "<span class='bold'>" + this.humidity + "</span>%";
+		this.config.values.forEach((element, index) => {
+			div.innerHTML += "<div>"
+			div.innerHTML += "<i aria-hidden='true' class='fa " + element.icon + "'></i>&nbsp;";
+			div.innerHTML += element.title + ":&nbsp;";
+			div.innerHTML += "<span class='bold'>" + this.values[index] + "</span>" + element.suffix + "&nbsp;";
+			div.innerHTML += "</div>"
+		});
       wrapper.appendChild(div);
     }
 
@@ -67,9 +72,9 @@ Module.register("MMM-updateFromStdOut", {
 
   socketNotificationReceived: function (notification, payload) {
     if (notification === "DATA-MMM-updateFromStdOut") {
-      this.temperature = payload.temp;
-      this.humidity = payload.humidity;
+	  this.values[payload.index] = payload.value;
       this.battery = payload.battery;
+
       this.loaded = 1;
 
       this.updateDom();
